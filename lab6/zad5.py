@@ -8,7 +8,7 @@ import uuid
 SMTP_HOST = "poczta.interia.pl"
 SMTP_PORT = 587
 
-# Mapowanie rozszerzeń na MIME type
+
 IMAGE_MIME_TYPES = {
     ".jpg":  "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -53,8 +53,7 @@ def build_mime_with_image(sender, recipient, subject, body, image_path):
         encoded_image[i:i+76] for i in range(0, len(encoded_image), 76)
     )
 
-    print(f"[Załącznik: {filename}, MIME: {mime_type}, "
-          f"rozmiar: {len(image_data)} B → {len(encoded_image)} B base64]")
+    print("[Załącznik]")
 
     mime = (
         f"From: {sender}\r\n"
@@ -82,7 +81,7 @@ def build_mime_with_image(sender, recipient, subject, body, image_path):
 
 
 def send_email_with_image(sender, password, recipient, subject, body, image_path):
-    print(f"\nŁączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as raw_sock:
         recv(raw_sock)
@@ -95,7 +94,7 @@ def send_email_with_image(sender, password, recipient, subject, body, image_path
 
         context = ssl.create_default_context()
         sock = context.wrap_socket(raw_sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
         send(sock, "EHLO localhost")
         recv(sock)
@@ -120,27 +119,26 @@ def send_email_with_image(sender, password, recipient, subject, body, image_path
 
         mime_message = build_mime_with_image(sender, recipient, subject, body, image_path)
         payload = mime_message + ".\r\n"
-        print(">> [MIME multipart z obrazkiem + .]")
+        print(">> [DATA]")
         sock.sendall(payload.encode())
         recv(sock)
 
         send(sock, "QUIT")
         recv(sock)
 
-    print("\nWiadomość z obrazkiem wysłana!")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":
-    print("=== Zadanie 5: E-mail z załącznikiem – obrazek (MIME multipart) ===\n")
-    sender     = input("Adres nadawcy (login@interia.pl): ").strip()
+    sender     = input("Od: ").strip()
     password   = getpass.getpass("Hasło: ")
-    recipient  = input("Adres odbiorcy: ").strip()
+    recipient  = input("Do: ").strip()
     subject    = input("Temat: ").strip()
-    body       = input("Treść wiadomości: ").strip()
-    image_path = input("Ścieżka do obrazka (jpg/png/gif/...): ").strip()
+    body       = input("Treść: ").strip()
+    image_path = input("Plik: ").strip()
 
     if not os.path.isfile(image_path):
-        print(f"Błąd: plik '{image_path}' nie istnieje.")
+        print("Błąd: brak pliku.")
         exit(1)
 
     send_email_with_image(sender, password, recipient, subject, body, image_path)

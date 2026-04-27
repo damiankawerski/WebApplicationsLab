@@ -25,7 +25,7 @@ def get_mime_type(path):
     return IMAGE_MIME_MAP.get(ext, "application/octet-stream")
 
 
-# ---------- Niskopoziomowa komunikacja SMTP ----------
+
 
 def recv_response(sock):
     data = b""
@@ -54,7 +54,7 @@ def check(code, expected, context=""):
         raise RuntimeError(f"SMTP {code} (oczekiwano {expected}) {context}")
 
 
-# ---------- Budowanie MIME ----------
+
 
 def encode_base64_chunked(data: bytes, width=76) -> str:
     encoded = base64.b64encode(data).decode("ascii")
@@ -70,7 +70,7 @@ def build_multipart_image(sender, recipients_str, subject, body, image_path):
         raw = f.read()
 
     encoded = encode_base64_chunked(raw)
-    print(f"[Załącznik: {filename}  MIME: {mime_type}  {len(raw)} B → {len(encoded)} B base64]")
+    print("[Załącznik]")
 
     headers = (
         f"From: {sender}\r\n"
@@ -102,17 +102,15 @@ def build_multipart_image(sender, recipients_str, subject, body, image_path):
     return headers + text_part + image_part + closing
 
 
-# ---------- Klient ----------
+
 
 def smtp_client_with_image():
-    print("=== Zadanie 8: Klient SMTP z załącznikiem – obrazek (bez gotowych bibliotek) ===\n")
-
-    sender     = input("Adres nadawcy (login@interia.pl): ").strip()
+    sender     = input("Od: ").strip()
     password   = getpass.getpass("Hasło: ")
-    rcpt_raw   = input("Adresy odbiorców (oddzielone przecinkami): ").strip()
+    rcpt_raw   = input("Do (,): ").strip()
     recipients = [r.strip() for r in rcpt_raw.split(",") if r.strip()]
     subject    = input("Temat: ").strip()
-    print("Treść (zakończ pustą linią):")
+    print("Treść:")
     lines = []
     while True:
         line = input()
@@ -120,13 +118,13 @@ def smtp_client_with_image():
             break
         lines.append(line)
     body       = "\r\n".join(lines)
-    image_path = input("Ścieżka do obrazka: ").strip()
+    image_path = input("Plik: ").strip()
 
     if not os.path.isfile(image_path):
-        print(f"Błąd: '{image_path}' nie istnieje.")
+        print("Błąd: brak pliku.")
         return
 
-    print(f"\nŁączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as raw_sock:
         code, _ = recv_response(raw_sock)
@@ -142,7 +140,7 @@ def smtp_client_with_image():
 
         context = ssl.create_default_context()
         sock = context.wrap_socket(raw_sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
         send_cmd(sock, "EHLO localhost")
         code, _ = recv_response(sock)
@@ -177,7 +175,7 @@ def smtp_client_with_image():
         mime_body = build_multipart_image(sender, recipients_str, subject, body, image_path)
         payload = mime_body + ".\r\n"
 
-        print(">> [MIME multipart/mixed z obrazkiem + .]")
+        print(">> [DATA]")
         sock.sendall(payload.encode())
         code, _ = recv_response(sock)
         check(code, 250)
@@ -185,7 +183,7 @@ def smtp_client_with_image():
         send_cmd(sock, "QUIT")
         recv_response(sock)
 
-    print("\n✓ Wiadomość z obrazkiem wysłana!")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":

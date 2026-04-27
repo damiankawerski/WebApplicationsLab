@@ -25,13 +25,7 @@ def send(sock, cmd):
 
 
 def send_spoofed_email(real_sender, password, spoofed_from, recipient, subject, body):
-    """
-    real_sender  – prawdziwe konto SMTP (uwierzytelnienie + envelope MAIL FROM)
-    spoofed_from – sfałszowany adres w nagłówku From:
-    """
-    print(f"\nŁączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
-    print(f"[!] Envelope MAIL FROM : {real_sender}")
-    print(f"[!] Nagłówek From:       {spoofed_from}  ← PODMIENIONY\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as raw_sock:
         recv(raw_sock)
@@ -44,7 +38,7 @@ def send_spoofed_email(real_sender, password, spoofed_from, recipient, subject, 
 
         context = ssl.create_default_context()
         sock = context.wrap_socket(raw_sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
         send(sock, "EHLO localhost")
         recv(sock)
@@ -58,7 +52,7 @@ def send_spoofed_email(real_sender, password, spoofed_from, recipient, subject, 
         send(sock, base64.b64encode(password.encode()).decode())
         recv(sock)
 
-        # Envelope MAIL FROM = prawdziwy nadawca (wymóg serwera)
+
         send(sock, f"MAIL FROM:<{real_sender}>")
         recv(sock)
 
@@ -68,34 +62,31 @@ def send_spoofed_email(real_sender, password, spoofed_from, recipient, subject, 
         send(sock, "DATA")
         recv(sock)
 
-        # Nagłówek From: = sfałszowany adres
+
         message = (
-            f"From: {spoofed_from}\r\n"          # ← podmieniony From
+            f"From: {spoofed_from}\r\n"
             f"To: {recipient}\r\n"
             f"Subject: {subject}\r\n"
-            f"X-Originating-Email: {real_sender}\r\n"  # informacyjny nagłówek
+            f"X-Originating-Email: {real_sender}\r\n"
             f"\r\n"
             f"{body}\r\n"
             f".\r\n"
         )
-        print(">> [treść wiadomości (spoofed From) + .]")
+        print(">> [DATA]")
         sock.sendall(message.encode())
         recv(sock)
 
         send(sock, "QUIT")
         recv(sock)
 
-    print("\nWiadomość wysłana (From podmieniony w nagłówkach).")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":
-    print("=== Zadanie 3: E-mail ze sfałszowanym nadawcą (spoofing) ===")
-    print("UWAGA: Tylko do celów edukacyjnych!\n")
-
-    real_sender  = input("Twój prawdziwy adres (login@interia.pl): ").strip()
+    real_sender  = input("Od SMTP: ").strip()
     password     = getpass.getpass("Hasło: ")
-    spoofed_from = input("Sfałszowany adres From (np. ktos@example.com): ").strip()
-    recipient    = input("Adres odbiorcy: ").strip()
+    spoofed_from = input("From: ").strip()
+    recipient    = input("Do: ").strip()
     subject      = input("Temat: ").strip()
     body         = input("Treść: ").strip()
 

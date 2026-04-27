@@ -7,9 +7,6 @@ import uuid
 SMTP_HOST = "poczta.interia.pl"
 SMTP_PORT = 587
 
-
-# ---------- SMTP helpers ----------
-
 def recv_response(sock):
     data = b""
     while True:
@@ -37,14 +34,9 @@ def check(code, expected, context=""):
         raise RuntimeError(f"SMTP {code} (oczekiwano {expected}) {context}")
 
 
-# ---------- Budowanie wiadomości HTML ----------
+
 
 def build_html_email(sender, recipients_str, subject, plain_body, html_body):
-    """
-    Tworzy wiadomość multipart/alternative:
-      - text/plain  (fallback)
-      - text/html   (sformatowana wersja HTML)
-    """
     boundary = f"----=_AltBoundary_{uuid.uuid4().hex}"
 
     msg = (
@@ -55,7 +47,7 @@ def build_html_email(sender, recipients_str, subject, plain_body, html_body):
         f"Content-Type: multipart/alternative; boundary=\"{boundary}\"\r\n"
         f"\r\n"
 
-        # Część 1 – plain text (fallback)
+
         f"--{boundary}\r\n"
         f"Content-Type: text/plain; charset=utf-8\r\n"
         f"Content-Transfer-Encoding: 8bit\r\n"
@@ -63,7 +55,7 @@ def build_html_email(sender, recipients_str, subject, plain_body, html_body):
         f"{plain_body}\r\n"
         f"\r\n"
 
-        # Część 2 – HTML
+
         f"--{boundary}\r\n"
         f"Content-Type: text/html; charset=utf-8\r\n"
         f"Content-Transfer-Encoding: 8bit\r\n"
@@ -92,7 +84,7 @@ def plain_to_html(plain: str) -> str:
     html = re.sub(r'__(.+?)__',     r'<u>\1</u>',           html)
     html = re.sub(r'~~(.+?)~~',     r'<s>\1</s>',           html)
     html = re.sub(r'`(.+?)`',       r'<code>\1</code>',     html)
-    # Nowe linie → <br>
+
     html = html.replace("\r\n", "<br>\r\n").replace("\n", "<br>\n")
     return (
         "<!DOCTYPE html>\r\n"
@@ -102,20 +94,13 @@ def plain_to_html(plain: str) -> str:
         "</body></html>"
     )
 
-
-# ---------- Klient SMTP ----------
-
 def smtp_html_client():
-    print("=== Zadanie 9: Klient SMTP – wiadomość HTML ===\n")
-    print("Składnia formatowania w treści:")
-    print("  **pogrubienie**  *kursywa*  __podkreślenie__  ~~przekreślenie~~  `kod`\n")
-
-    sender    = input("Adres nadawcy (login@interia.pl): ").strip()
+    sender    = input("Od: ").strip()
     password  = getpass.getpass("Hasło: ")
-    rcpt_raw  = input("Adresy odbiorców (oddzielone przecinkami): ").strip()
+    rcpt_raw  = input("Do (,): ").strip()
     recipients = [r.strip() for r in rcpt_raw.split(",") if r.strip()]
     subject   = input("Temat: ").strip()
-    print("Treść (zakończ pustą linią, używaj znaczników formatowania):")
+    print("Treść:")
     lines = []
     while True:
         line = input()
@@ -124,14 +109,10 @@ def smtp_html_client():
         lines.append(line)
     plain_body = "\r\n".join(lines)
 
-    # Konwersja na HTML
+
     html_body = plain_to_html(plain_body)
 
-    print("\n--- Podgląd HTML ---")
-    print(html_body[:800])
-    print("--- Koniec podglądu ---\n")
-
-    print(f"Łączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as raw_sock:
         code, _ = recv_response(raw_sock)
@@ -147,7 +128,7 @@ def smtp_html_client():
 
         context = ssl.create_default_context()
         sock = context.wrap_socket(raw_sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
         send_cmd(sock, "EHLO localhost")
         code, _ = recv_response(sock)
@@ -182,7 +163,7 @@ def smtp_html_client():
         mime_msg = build_html_email(sender, recipients_str, subject, plain_body, html_body)
         payload  = mime_msg + ".\r\n"
 
-        print(">> [MIME multipart/alternative (plain + HTML) + .]")
+        print(">> [DATA]")
         sock.sendall(payload.encode("utf-8"))
         code, _ = recv_response(sock)
         check(code, 250)
@@ -190,7 +171,7 @@ def smtp_html_client():
         send_cmd(sock, "QUIT")
         recv_response(sock)
 
-    print("\n✓ Wiadomość HTML wysłana!")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":

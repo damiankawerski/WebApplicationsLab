@@ -33,7 +33,7 @@ def build_mime_with_text_attachment(sender, recipient, subject, body, attachment
     with open(attachment_path, "rb") as f:
         file_data = f.read()
     encoded_file = base64.b64encode(file_data).decode()
-    # Podziel na linie po 76 znaków (RFC 2045)
+
     encoded_lines = "\r\n".join(
         encoded_file[i:i+76] for i in range(0, len(encoded_file), 76)
     )
@@ -64,7 +64,7 @@ def build_mime_with_text_attachment(sender, recipient, subject, body, attachment
 
 
 def send_email_with_text_attachment(sender, password, recipient, subject, body, attachment_path):
-    print(f"\nŁączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as raw_sock:
         recv(raw_sock)
@@ -77,7 +77,7 @@ def send_email_with_text_attachment(sender, password, recipient, subject, body, 
 
         context = ssl.create_default_context()
         sock = context.wrap_socket(raw_sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
         send(sock, "EHLO localhost")
         recv(sock)
@@ -104,27 +104,26 @@ def send_email_with_text_attachment(sender, password, recipient, subject, body, 
             sender, recipient, subject, body, attachment_path
         )
         payload = mime_message + ".\r\n"
-        print(">> [MIME multipart z załącznikiem tekstowym + .]")
+        print(">> [DATA]")
         sock.sendall(payload.encode())
         recv(sock)
 
         send(sock, "QUIT")
         recv(sock)
 
-    print("\nWiadomość z załącznikiem tekstowym wysłana!")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":
-    print("=== Zadanie 4: E-mail z załącznikiem tekstowym (MIME multipart) ===\n")
-    sender          = input("Adres nadawcy (login@interia.pl): ").strip()
+    sender          = input("Od: ").strip()
     password        = getpass.getpass("Hasło: ")
-    recipient       = input("Adres odbiorcy: ").strip()
+    recipient       = input("Do: ").strip()
     subject         = input("Temat: ").strip()
-    body            = input("Treść wiadomości: ").strip()
-    attachment_path = input("Ścieżka do pliku tekstowego: ").strip()
+    body            = input("Treść: ").strip()
+    attachment_path = input("Plik: ").strip()
 
     if not os.path.isfile(attachment_path):
-        print(f"Błąd: plik '{attachment_path}' nie istnieje.")
+        print("Błąd: brak pliku.")
         exit(1)
 
     send_email_with_text_attachment(sender, password, recipient, subject, body, attachment_path)

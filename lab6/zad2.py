@@ -28,7 +28,7 @@ def send_email_multi(sender, password, recipients, subject, body):
     """
     recipients: lista adresów e-mail (list[str])
     """
-    print(f"\nŁączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as raw_sock:
         recv(raw_sock)
@@ -41,7 +41,7 @@ def send_email_multi(sender, password, recipients, subject, body):
 
         context = ssl.create_default_context()
         sock = context.wrap_socket(raw_sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
         send(sock, "EHLO localhost")
         recv(sock)
@@ -58,7 +58,7 @@ def send_email_multi(sender, password, recipients, subject, body):
         send(sock, f"MAIL FROM:<{sender}>")
         recv(sock)
 
-        # Każdy odbiorca osobnym RCPT TO
+
         for rcpt in recipients:
             send(sock, f"RCPT TO:<{rcpt.strip()}>")
             recv(sock)
@@ -75,24 +75,22 @@ def send_email_multi(sender, password, recipients, subject, body):
             f"{body}\r\n"
             f".\r\n"
         )
-        print(">> [treść wiadomości + .]")
+        print(">> [DATA]")
         sock.sendall(message.encode())
         recv(sock)
 
         send(sock, "QUIT")
         recv(sock)
 
-    print("\nWiadomość wysłana do wszystkich odbiorców!")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":
-    print("=== Zadanie 2: Wysyłanie e-mail do wielu odbiorców przez ESMTP ===\n")
-    sender    = input("Adres nadawcy (login@interia.pl): ").strip()
+    sender    = input("Od: ").strip()
     password  = getpass.getpass("Hasło: ")
-    rcpt_raw  = input("Adresy odbiorców (oddzielone przecinkami): ").strip()
+    rcpt_raw  = input("Do (,): ").strip()
     recipients = [r.strip() for r in rcpt_raw.split(",") if r.strip()]
     subject   = input("Temat: ").strip()
     body      = input("Treść: ").strip()
 
-    print(f"\nOdbiorcy: {recipients}")
     send_email_multi(sender, password, recipients, subject, body)

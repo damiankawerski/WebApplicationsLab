@@ -1,5 +1,3 @@
-
-
 import socket
 import base64
 import ssl
@@ -38,7 +36,7 @@ def check(code, expected, context=""):
         raise RuntimeError(f"SMTP error {code} (oczekiwano {expected}) {context}")
 
 
-# ---------- Budowanie wiadomości MIME ----------
+
 
 def encode_base64_chunked(data: bytes, width=76) -> str:
     """Koduje bajty do Base64 i dzieli na linie po `width` znaków."""
@@ -54,11 +52,11 @@ def build_multipart_text(sender, recipients_str, subject, body, attachment_path)
         raw = f.read()
 
     encoded = encode_base64_chunked(raw)
-    print(f"[Załącznik: {filename}, {len(raw)} B → {len(encoded)} B (base64)]")
+    print("[Załącznik]")
 
     parts = []
 
-    # Nagłówki główne
+
     headers = (
         f"From: {sender}\r\n"
         f"To: {recipients_str}\r\n"
@@ -68,7 +66,7 @@ def build_multipart_text(sender, recipients_str, subject, body, attachment_path)
     )
     parts.append(headers)
 
-    # Część 1: treść
+
     text_part = (
         f"\r\n--{boundary}\r\n"
         f"Content-Type: text/plain; charset=utf-8\r\n"
@@ -78,7 +76,7 @@ def build_multipart_text(sender, recipients_str, subject, body, attachment_path)
     )
     parts.append(text_part)
 
-    # Część 2: załącznik tekstowy
+
     attach_part = (
         f"\r\n--{boundary}\r\n"
         f"Content-Type: text/plain; charset=utf-8; name=\"{filename}\"\r\n"
@@ -89,23 +87,21 @@ def build_multipart_text(sender, recipients_str, subject, body, attachment_path)
     )
     parts.append(attach_part)
 
-    # Zamknięcie
+
     parts.append(f"\r\n--{boundary}--\r\n")
 
     return "".join(parts)
 
 
-# ---------- Główna funkcja klienta ----------
+
 
 def smtp_client_with_text_attachment():
-    print("=== Zadanie 7: Klient SMTP z załącznikiem tekstowym (bez gotowych bibliotek) ===\n")
-
-    sender          = input("Adres nadawcy (login@interia.pl): ").strip()
+    sender          = input("Od: ").strip()
     password        = getpass.getpass("Hasło: ")
-    rcpt_raw        = input("Adresy odbiorców (oddzielone przecinkami): ").strip()
+    rcpt_raw        = input("Do (,): ").strip()
     recipients      = [r.strip() for r in rcpt_raw.split(",") if r.strip()]
     subject         = input("Temat: ").strip()
-    print("Treść (zakończ pustą linią):")
+    print("Treść:")
     lines = []
     while True:
         line = input()
@@ -113,13 +109,13 @@ def smtp_client_with_text_attachment():
             break
         lines.append(line)
     body            = "\r\n".join(lines)
-    attachment_path = input("Ścieżka do pliku tekstowego: ").strip()
+    attachment_path = input("Plik: ").strip()
 
     if not os.path.isfile(attachment_path):
-        print(f"Błąd: '{attachment_path}' nie istnieje.")
+        print("Błąd: brak pliku.")
         return
 
-    print(f"\nŁączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as raw_sock:
         code, _ = recv_response(raw_sock)
@@ -135,7 +131,7 @@ def smtp_client_with_text_attachment():
 
         context = ssl.create_default_context()
         sock = context.wrap_socket(raw_sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
         send_cmd(sock, "EHLO localhost")
         code, _ = recv_response(sock)
@@ -170,7 +166,7 @@ def smtp_client_with_text_attachment():
         mime_body = build_multipart_text(sender, recipients_str, subject, body, attachment_path)
         payload = mime_body + ".\r\n"
 
-        print(">> [MIME multipart/mixed + .]")
+        print(">> [DATA]")
         sock.sendall(payload.encode())
         code, _ = recv_response(sock)
         check(code, 250, "Serwer odrzucił wiadomość")
@@ -178,7 +174,7 @@ def smtp_client_with_text_attachment():
         send_cmd(sock, "QUIT")
         recv_response(sock)
 
-    print("\n✓ Wiadomość z załącznikiem tekstowym wysłana!")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":

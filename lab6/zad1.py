@@ -24,30 +24,30 @@ def send(sock, cmd):
 
 
 def send_email(sender, password, recipient, subject, body):
-    print(f"\nŁączenie z {SMTP_HOST}:{SMTP_PORT}...\n")
+    print("Łączenie...")
 
     with socket.create_connection((SMTP_HOST, SMTP_PORT)) as sock:
-        # Powitanie
+
         recv(sock)
 
-        # EHLO
+
         send(sock, "EHLO localhost")
         recv(sock)
 
-        # STARTTLS
+
         send(sock, "STARTTLS")
         recv(sock)
 
         import ssl
         context = ssl.create_default_context()
         sock = context.wrap_socket(sock, server_hostname=SMTP_HOST)
-        print("[TLS aktywne]\n")
+        print("TLS")
 
-        # EHLO po TLS
+
         send(sock, "EHLO localhost")
         recv(sock)
 
-        # AUTH LOGIN
+
         send(sock, "AUTH LOGIN")
         recv(sock)
 
@@ -57,15 +57,15 @@ def send_email(sender, password, recipient, subject, body):
         send(sock, base64.b64encode(password.encode()).decode())
         recv(sock)
 
-        # MAIL FROM
+
         send(sock, f"MAIL FROM:<{sender}>")
         recv(sock)
 
-        # RCPT TO
+
         send(sock, f"RCPT TO:<{recipient}>")
         recv(sock)
 
-        # DATA
+
         send(sock, "DATA")
         recv(sock)
 
@@ -77,22 +77,21 @@ def send_email(sender, password, recipient, subject, body):
             f"{body}\r\n"
             f".\r\n"
         )
-        print(f">> [treść wiadomości + .]\n")
+        print(">> [DATA]")
         sock.sendall(message.encode())
         recv(sock)
 
-        # QUIT
+
         send(sock, "QUIT")
         recv(sock)
 
-    print("\nWiadomość wysłana pomyślnie!")
+    print("Wysłano.")
 
 
 if __name__ == "__main__":
-    print("=== Zadanie 1: Wysyłanie e-mail przez ESMTP ===\n")
-    sender    = input("Adres nadawcy (login@interia.pl): ").strip()
+    sender    = input("Od: ").strip()
     password  = getpass.getpass("Hasło: ")
-    recipient = input("Adres odbiorcy: ").strip()
+    recipient = input("Do: ").strip()
     subject   = input("Temat: ").strip()
     body      = input("Treść: ").strip()
 
