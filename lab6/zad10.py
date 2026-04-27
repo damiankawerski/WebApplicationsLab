@@ -69,14 +69,6 @@ def build_html_email(sender, recipients_str, subject, plain_body, html_body):
 
 
 def plain_to_html(plain: str) -> str:
-    """
-    Automatycznie konwertuje podstawowe znaczniki tekstowe na HTML:
-      **tekst**   → <strong>
-      *tekst*     → <em>
-      __tekst__   → <u>
-      ~~tekst~~   → <s>
-      `tekst`     → <code>
-    """
     import re
     html = plain
     html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
